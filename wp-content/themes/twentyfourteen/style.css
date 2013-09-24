@@ -559,6 +559,9 @@ body {
 	position: relative;
 	z-index: 3;
 }
+#site-header img {
+	display: block;
+}
 .header-main {
 	margin-right: 48px;
 	min-height: 48px;

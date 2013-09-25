@@ -108,17 +108,14 @@ function wp_reset_query() {
 
 /**
  * After looping through a separate query, this function restores
- * the $post global to the current post in the main query
+ * the $post global to the current post in the main query.
  *
  * @since 3.0.0
  * @uses $wp_query
  */
 function wp_reset_postdata() {
 	global $wp_query;
-	if ( !empty($wp_query->post) ) {
-		$GLOBALS['post'] = $wp_query->post;
-		setup_postdata($wp_query->post);
-	}
+	$wp_query->reset_postdata();
 }
 
 /*
@@ -720,6 +717,12 @@ function is_404() {
  * @return bool
  */
 function is_main_query() {
+	if ( 'pre_get_posts' === current_filter() ) {
+		$message = sprintf( __( 'In <code>%1$s</code>, use the <code>%2$s</code> method, not the <code>%3$s</code> function. See %4$s.' ),
+			'pre_get_posts', 'WP_Query::is_main_query()', 'is_main_query()', __( 'http://codex.wordpress.org/Function_Reference/is_main_query' ) );
+		_doing_it_wrong( __FUNCTION__, $message, '3.7' );
+	}
+
 	global $wp_query;
 	return $wp_query->is_main_query();
 }
@@ -3627,6 +3630,21 @@ class WP_Query {
 	function is_main_query() {
 		global $wp_the_query;
 		return $wp_the_query === $this;
+	}
+
+	/**
+	 * After looping through a nested query, this function
+	 * restores the $post global to the current post in this query.
+	 *
+	 * @since 3.7.0
+	 *
+	 * @return bool
+	 */
+	function reset_postdata() {
+		if ( ! empty( $this->post ) ) {
+			$GLOBALS['post'] = $this->post;
+			setup_postdata( $this->post );
+		}
 	}
 }
 

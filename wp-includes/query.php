@@ -1712,7 +1712,7 @@ class WP_Query {
 		do_action_ref_array('parse_query', array(&$this));
 	}
 
-	/*
+	/**
 	 * Parses various taxonomy related query vars.
 	 *
 	 * @access protected
@@ -1735,7 +1735,7 @@ class WP_Query {
 			);
 		}
 
-		foreach ( $GLOBALS['wp_taxonomies'] as $taxonomy => $t ) {
+		foreach ( get_taxonomies( array() , 'objects' ) as $taxonomy => $t ) {
 			if ( 'post_tag' == $taxonomy )
 				continue;	// Handled further down in the $q['tag'] block
 
@@ -1767,26 +1767,39 @@ class WP_Query {
 		}
 
 		// Category stuff
-		if ( !empty($q['cat']) && '0' != $q['cat'] && !$this->is_singular && $this->query_vars_changed ) {
-			$q['cat'] = ''.urldecode($q['cat']).'';
-			$q['cat'] = addslashes_gpc($q['cat']);
-			$cat_array = preg_split('/[,\s]+/', $q['cat']);
-			$q['cat'] = '';
-			$req_cats = array();
-			foreach ( (array) $cat_array as $cat ) {
-				$cat = intval($cat);
-				$req_cats[] = $cat;
-				$in = ($cat > 0);
-				$cat = abs($cat);
-				if ( $in ) {
-					$q['category__in'][] = $cat;
-					$q['category__in'] = array_merge( $q['category__in'], get_term_children($cat, 'category') );
-				} else {
-					$q['category__not_in'][] = $cat;
-					$q['category__not_in'] = array_merge( $q['category__not_in'], get_term_children($cat, 'category') );
-				}
+		if ( ! empty( $q['cat'] ) && ! $this->is_singular ) {
+			$cat_in = $cat_not_in = array();
+
+			$cat_array = preg_split( '/[,\s]+/', urldecode( $q['cat'] ) );
+			$cat_array = array_map( 'intval', $cat_array );
+			$q['cat'] = implode( ',', $cat_array );
+
+			foreach ( $cat_array as $cat ) {
+				if ( $cat > 0 )
+					$cat_in[] = $cat;
+				elseif ( $cat < 0 )
+					$cat_not_in[] = abs( $cat );
 			}
-			$q['cat'] = implode(',', $req_cats);
+
+			if ( ! empty( $cat_in ) ) {
+				$tax_query[] = array(
+					'taxonomy' => 'category',
+					'terms' => $cat_in,
+					'field' => 'term_id',
+					'include_children' => true
+				);
+			}
+
+			if ( ! empty( $cat_not_in ) ) {
+				$tax_query[] = array(
+					'taxonomy' => 'category',
+					'terms' => $cat_not_in,
+					'field' => 'term_id',
+					'operator' => 'NOT IN',
+					'include_children' => true
+				);
+			}
+			unset( $cat_array, $cat_in, $cat_not_in );
 		}
 
 		if ( ! empty( $q['category__and'] ) && 1 === count( (array) $q['category__and'] ) ) {
@@ -1911,8 +1924,9 @@ class WP_Query {
 	 *
 	 * @since 3.7.0
 	 *
-	 * @global type $wpdb
+	 * @global wpdb $wpdb
 	 * @param array $q Query variables.
+	 * @return string WHERE clause.
 	 */
 	protected function parse_search( &$q ) {
 		global $wpdb;
@@ -1958,15 +1972,7 @@ class WP_Query {
 				$search .= " AND ($wpdb->posts.post_password = '') ";
 		}
 
-		/**
-		 * Filter the search SQL that is used in the WHERE clause of WP_Query.
-		 *
-		 * @since 3.0.0
-		 *
-		 * @param string   $search Search SQL for WHERE clause.
-		 * @param WP_Query $this   The current WP_Query object.
-		 */
-		return apply_filters_ref_array( 'posts_search', array( $search, &$this ) );
+		return $search;
 	}
 
 	/**
@@ -1994,8 +2000,8 @@ class WP_Query {
 			else
 				$term = trim( $term, "\"' " );
 
-			// \p{L} matches a single letter that is not a Chinese, Japanese, etc. char
-			if ( ! $term || preg_match( '/^\p{L}$/u', $term ) )
+			// Avoid single A-Z.
+			if ( ! $term || ( 1 === strlen( $term ) && preg_match( '/^[a-z]$/i', $term ) ) )
 				continue;
 
 			if ( in_array( call_user_func( $strtolower, $term ), $stopwords, true ) )
@@ -2025,6 +2031,7 @@ class WP_Query {
 		$words = explode( ',', _x( 'about,an,are,as,at,be,by,com,for,from,how,in,is,it,of,on,or,that,the,this,to,was,what,when,where,who,will,with,www',
 			'Comma-separated list of search stopwords in your language' ) );
 
+		$stopwords = array();
 		foreach( $words as $word ) {
 			$word = trim( $word, "\r\n\t " );
 			if ( $word )
@@ -2140,7 +2147,7 @@ class WP_Query {
 	 * @return array List of posts.
 	 */
 	function get_posts() {
-		global $wpdb, $user_ID;
+		global $wpdb;
 
 		$this->parse_query();
 
@@ -2428,6 +2435,16 @@ class WP_Query {
 		if ( ! empty( $q['s'] ) )
 			$search = $this->parse_search( $q );
 
+		/**
+		 * Filter the search SQL that is used in the WHERE clause of WP_Query.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string   $search Search SQL for WHERE clause.
+		 * @param WP_Query $this   The current WP_Query object.
+		 */
+		$search = apply_filters_ref_array( 'posts_search', array( $search, &$this ) );
+
 		// Taxonomies
 		if ( !$this->is_singular ) {
 			$this->parse_tax_query( $q );
@@ -2627,7 +2644,7 @@ class WP_Query {
 		// Order search results by relevance only when another "orderby" is not specified in the query.
 		if ( ! empty( $q['s'] ) ) {
 			$search_orderby = '';
-			if ( ! empty( $q['search_orderby_title'] ) && empty( $q['orderby'] ) )
+			if ( ! empty( $q['search_orderby_title'] ) && ( empty( $q['orderby'] ) && ! $this->is_feed ) || ( isset( $q['orderby'] ) && 'relevance' === $q['orderby'] ) )
 				$search_orderby = $this->parse_search_order( $q );
 
 			/**
@@ -2686,6 +2703,8 @@ class WP_Query {
 			$read_private_cap = 'read_private_' . $post_type_cap . 's';
 		}
 
+		$user_id = get_current_user_id();
+
 		if ( ! empty( $q['post_status'] ) ) {
 			$statuswheres = array();
 			$q_status = $q['post_status'];
@@ -2718,13 +2737,13 @@ class WP_Query {
 			}
 			if ( !empty($r_status) ) {
 				if ( !empty($q['perm'] ) && 'editable' == $q['perm'] && !current_user_can($edit_others_cap) )
-					$statuswheres[] = "($wpdb->posts.post_author = $user_ID " . "AND (" . join( ' OR ', $r_status ) . "))";
+					$statuswheres[] = "($wpdb->posts.post_author = $user_id " . "AND (" . join( ' OR ', $r_status ) . "))";
 				else
 					$statuswheres[] = "(" . join( ' OR ', $r_status ) . ")";
 			}
 			if ( !empty($p_status) ) {
 				if ( !empty($q['perm'] ) && 'readable' == $q['perm'] && !current_user_can($read_private_cap) )
-					$statuswheres[] = "($wpdb->posts.post_author = $user_ID " . "AND (" . join( ' OR ', $p_status ) . "))";
+					$statuswheres[] = "($wpdb->posts.post_author = $user_id " . "AND (" . join( ' OR ', $p_status ) . "))";
 				else
 					$statuswheres[] = "(" . join( ' OR ', $p_status ) . ")";
 			}
@@ -2757,7 +2776,7 @@ class WP_Query {
 				// Add private states that are limited to viewing by the author of a post or someone who has caps to read private states.
 				$private_states = get_post_stati( array('private' => true) );
 				foreach ( (array) $private_states as $state )
-					$where .= current_user_can( $read_private_cap ) ? " OR $wpdb->posts.post_status = '$state'" : " OR $wpdb->posts.post_author = $user_ID AND $wpdb->posts.post_status = '$state'";
+					$where .= current_user_can( $read_private_cap ) ? " OR $wpdb->posts.post_status = '$state'" : " OR $wpdb->posts.post_author = $user_id AND $wpdb->posts.post_status = '$state'";
 			}
 
 			$where .= ')';
@@ -2782,13 +2801,13 @@ class WP_Query {
 			if ( !$page )
 				$page = 1;
 
-			if ( empty($q['offset']) ) {
-				$pgstrt = ($page - 1) * $q['posts_per_page'] . ', ';
-			} else { // we're ignoring $page and using 'offset'
+			$pgstrt = ($page - 1) * $q['posts_per_page'];
+
+			if ( ! empty( $q['offset'] ) ) {
 				$q['offset'] = absint($q['offset']);
-				$pgstrt = $q['offset'] . ', ';
+				$pgstrt += $q['offset'];
 			}
-			$limits = 'LIMIT ' . $pgstrt . $q['posts_per_page'];
+			$limits = 'LIMIT ' . $pgstrt . ', ' . $q['posts_per_page'];
 		}
 
 		// Comments feeds
@@ -3244,20 +3263,25 @@ class WP_Query {
 		$this->queried_object_id = 0;
 
 		if ( $this->is_category || $this->is_tag || $this->is_tax ) {
-			$tax_query_in_and = wp_list_filter( $this->tax_query->queries, array( 'operator' => 'NOT IN' ), 'NOT' );
+			if ( $this->is_category ) {
+				$term = get_term( $this->get( 'cat' ), 'category' );
+			} elseif ( $this->is_tag ) {
+				$term = get_term( $this->get( 'tag_id' ), 'post_tag' );
+			} else {
+				$tax_query_in_and = wp_list_filter( $this->tax_query->queries, array( 'operator' => 'NOT IN' ), 'NOT' );
+				$query = reset( $tax_query_in_and );
 
-			$query = reset( $tax_query_in_and );
-
-			if ( 'term_id' == $query['field'] )
-				$term = get_term( reset( $query['terms'] ), $query['taxonomy'] );
-			elseif ( $query['terms'] )
-				$term = get_term_by( $query['field'], reset( $query['terms'] ), $query['taxonomy'] );
+				if ( 'term_id' == $query['field'] )
+					$term = get_term( reset( $query['terms'] ), $query['taxonomy'] );
+				else
+					$term = get_term_by( $query['field'], reset( $query['terms'] ), $query['taxonomy'] );
+			}
 
 			if ( ! empty( $term ) && ! is_wp_error( $term ) )  {
 				$this->queried_object = $term;
 				$this->queried_object_id = (int) $term->term_id;
 
-				if ( $this->is_category )
+				if ( $this->is_category && 'category' === $this->queried_object->taxonomy )
 					_make_cat_compat( $this->queried_object );
 			}
 		} elseif ( $this->is_post_type_archive ) {

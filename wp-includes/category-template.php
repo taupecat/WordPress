@@ -41,7 +41,7 @@ function get_category_link( $category ) {
  */
 function get_category_parents( $id, $link = false, $separator = '/', $nicename = false, $visited = array() ) {
 	$chain = '';
-	$parent = get_category( $id );
+	$parent = get_term( $id, 'category' );
 	if ( is_wp_error( $parent ) )
 		return $parent;
 
@@ -135,7 +135,7 @@ function _usort_terms_by_ID( $a, $b ) {
  */
 function get_the_category_by_ID( $cat_ID ) {
 	$cat_ID = (int) $cat_ID;
-	$category = get_category( $cat_ID );
+	$category = get_term( $cat_ID, 'category' );
 	if ( is_wp_error( $category ) )
 		return $category;
 	return $category->name;
@@ -232,6 +232,9 @@ function get_the_category_list( $separator = '', $parents='', $post_id = false )
  * @return bool True if the current post is in any of the given categories.
  */
 function in_category( $category, $post = null ) {
+	if ( empty( $category ) )
+		return false;
+
 	return has_category( $category, $post );
 }
 

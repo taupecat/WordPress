@@ -1,14 +1,17 @@
 <?php
 /**
- * Custom template tags for this theme.
+ * Custom template tags for Twenty Fourteen
  *
  * @package WordPress
  * @subpackage Twenty_Fourteen
+ * @since Twenty Fourteen 1.0
  */
 
 if ( ! function_exists( 'twentyfourteen_paging_nav' ) ) :
 /**
- * Displays navigation to next/previous set of posts when applicable.
+ * Display navigation to next/previous set of posts when applicable.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @return void
  */
@@ -58,10 +61,12 @@ endif;
 
 if ( ! function_exists( 'twentyfourteen_post_nav' ) ) :
 /**
- * Displays navigation to next/previous post when applicable.
-*
-* @return void
-*/
+ * Display navigation to next/previous post when applicable.
+ *
+ * @since Twenty Fourteen 1.0
+ *
+ * @return void
+ */
 function twentyfourteen_post_nav() {
 	// Don't print empty markup if there's nowhere to navigate.
 	$previous = ( is_attachment() ) ? get_post( get_post()->post_parent ) : get_adjacent_post( false, '', true );
@@ -75,8 +80,12 @@ function twentyfourteen_post_nav() {
 		<h1 class="screen-reader-text"><?php _e( 'Post navigation', 'twentyfourteen' ); ?></h1>
 		<div class="nav-links">
 			<?php
+			if ( is_attachment() ) :
+				previous_post_link( '%link', __( '<span class="meta-nav">Published In</span>%title', 'twentyfourteen' ) );
+			else :
 				previous_post_link( '%link', __( '<span class="meta-nav">Previous Post</span>%title', 'twentyfourteen' ) );
 				next_post_link( '%link', __( '<span class="meta-nav">Next Post</span>%title', 'twentyfourteen' ) );
+			endif;
 			?>
 		</div><!-- .nav-links -->
 	</nav><!-- .navigation -->
@@ -86,7 +95,9 @@ endif;
 
 if ( ! function_exists( 'twentyfourteen_posted_on' ) ) :
 /**
- * Prints HTML with meta information for the current post-date/time and author.
+ * Print HTML with meta information for the current post-date/time and author.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @return void
  */
@@ -94,22 +105,22 @@ function twentyfourteen_posted_on() {
 	if ( is_sticky() && is_home() && ! is_paged() )
 		echo '<span class="featured-post">' . __( 'Sticky', 'twentyfourteen' ) . '</span>';
 
-	printf( __( '<span class="entry-date"><a href="%1$s" title="%2$s" rel="bookmark"><time class="entry-date" datetime="%3$s">%4$s</time></a></span> <span class="byline"><span class="author vcard"><a class="url fn n" href="%5$s" title="%6$s" rel="author">%7$s</a></span></span>', 'twentyfourteen' ),
+	printf( __( '<span class="entry-date"><a href="%1$s" rel="bookmark"><time class="entry-date" datetime="%2$s">%3$s</time></a></span> <span class="byline"><span class="author vcard"><a class="url fn n" href="%4$s" rel="author">%5$s</a></span></span>', 'twentyfourteen' ),
 		esc_url( get_permalink() ),
-		esc_attr( get_the_time() ),
 		esc_attr( get_the_date( 'c' ) ),
 		esc_html( get_the_date() ),
 		esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ),
-		esc_attr( sprintf( __( 'View all posts by %s', 'twentyfourteen' ), get_the_author() ) ),
 		get_the_author()
 	);
 }
 endif;
 
 /**
- * Returns true if a blog has more than 1 category
+ * Find out if blog has more than one category.
  *
- * @return boolean
+ * @since Twenty Fourteen 1.0
+ *
+ * @return boolean true if blog has more than 1 category
  */
 function twentyfourteen_categorized_blog() {
 	if ( false === ( $all_the_cool_cats = get_transient( 'all_the_cool_cats' ) ) ) {
@@ -136,6 +147,9 @@ function twentyfourteen_categorized_blog() {
 /**
  * Flush out the transients used in twentyfourteen_categorized_blog
  *
+ * @since Twenty Fourteen 1.0
+ *
+ * @return void
  */
 function twentyfourteen_category_transient_flusher() {
 	// Like, beat it. Dig?
@@ -143,3 +157,39 @@ function twentyfourteen_category_transient_flusher() {
 }
 add_action( 'edit_category', 'twentyfourteen_category_transient_flusher' );
 add_action( 'save_post',     'twentyfourteen_category_transient_flusher' );
+
+/**
+ * Displays an optional post thumbnail, with an anchor element
+ * when on index views, and a div element when on a single view.
+ *
+ * @return void
+*/
+function twentyfourteen_post_thumbnail() {
+	if ( post_password_required() || ! has_post_thumbnail() )
+		return;
+
+	if ( is_singular() ) :
+	?>
+
+	<div class="post-thumbnail">
+	<?php
+		if ( is_active_sidebar( 'sidebar-2' ) || wp_is_mobile() )
+			the_post_thumbnail( 'post-thumbnail' );
+		else
+			the_post_thumbnail( 'post-thumbnail-full-width' );
+	?>
+	</div>
+
+	<?php else : ?>
+
+	<a class="post-thumbnail" href="<?php the_permalink(); ?>" rel="<?php the_ID(); ?>">
+	<?php
+		if ( is_active_sidebar( 'sidebar-2' ) || wp_is_mobile() )
+			the_post_thumbnail( 'post-thumbnail' );
+		else
+			the_post_thumbnail( 'post-thumbnail-full-width' );
+	?>
+	</a>
+
+	<?php endif; // End is_singular()
+}

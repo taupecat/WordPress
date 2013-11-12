@@ -396,7 +396,7 @@ class WP_Comment_Query {
 		return $comments;
 	}
 
-	/*
+	/**
 	 * Used internally to generate an SQL string for searching across multiple columns
 	 *
 	 * @access protected
@@ -1772,6 +1772,7 @@ function do_trackbacks($post_id) {
 	$excerpt = str_replace(']]>', ']]&gt;', $excerpt);
 	$excerpt = wp_html_excerpt($excerpt, 252, '&#8230;');
 
+	/** This filter is documented in wp-includes/post-template.php */
 	$post_title = apply_filters('the_title', $post->post_title, $post->ID);
 	$post_title = strip_tags($post_title);
 

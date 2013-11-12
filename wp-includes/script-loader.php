@@ -48,7 +48,10 @@ require( ABSPATH . WPINC . '/functions.wp-styles.php' );
  * @param object $scripts WP_Scripts object.
  */
 function wp_default_scripts( &$scripts ) {
+	include ABSPATH . WPINC . '/version.php'; // include an unmodified $wp_version
 
+	if ( ! defined( 'SCRIPT_DEBUG' ) )
+		define( 'SCRIPT_DEBUG', false !== strpos( $wp_version, '-src' ) );
 
 	if ( ! $guessurl = site_url() ) {
 		$guessed_url = true;
@@ -59,9 +62,6 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->content_url = defined('WP_CONTENT_URL')? WP_CONTENT_URL : '';
 	$scripts->default_version = get_bloginfo( 'version' );
 	$scripts->default_dirs = array('/wp-admin/js/', '/wp-includes/js/');
-
-	if ( ! defined( 'SCRIPT_DEBUG' ) )
-		define( 'SCRIPT_DEBUG', ! file_exists( ABSPATH . WPINC . '/js/wp-util.min.js' ) );
 
 	$suffix = SCRIPT_DEBUG ? '' : '.min';
 
@@ -332,6 +332,8 @@ function wp_default_scripts( &$scripts ) {
 
 	$scripts->add( 'user-suggest', "/wp-admin/js/user-suggest$suffix.js", array( 'jquery-ui-autocomplete' ), false, 1 );
 
+	$scripts->add( 'about', "/wp-admin/js/about$suffix.js", array( 'jquery', 'password-strength-meter' ), false, 1 );
+
 	$scripts->add( 'admin-bar', "/wp-includes/js/admin-bar$suffix.js", array(), false, 1 );
 
 	$scripts->add( 'wplink', "/wp-includes/js/wplink$suffix.js", array( 'jquery', 'wpdialogs' ), false, 1 );
@@ -390,6 +392,8 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'media-views',  "/wp-includes/js/media-views$suffix.js",  array( 'utils', 'media-models', 'wp-plupload', 'jquery-ui-sortable' ), false, 1 );
 	$scripts->add( 'media-editor', "/wp-includes/js/media-editor$suffix.js", array( 'shortcode', 'media-views' ), false, 1 );
 	$scripts->add( 'mce-view', "/wp-includes/js/mce-view$suffix.js", array( 'shortcode', 'media-models' ), false, 1 );
+
+	$scripts->add( 'svg-painter', '/wp-includes/js/svg-painter.js' );
 
 	if ( is_admin() ) {
 		$scripts->add( 'admin-tags', "/wp-admin/js/tags$suffix.js", array('jquery', 'wp-ajax-response'), false, 1 );
@@ -531,6 +535,10 @@ function wp_default_scripts( &$scripts ) {
  * @param object $styles
  */
 function wp_default_styles( &$styles ) {
+	include ABSPATH . WPINC . '/version.php'; // include an unmodified $wp_version
+
+	if ( ! defined( 'SCRIPT_DEBUG' ) )
+		define( 'SCRIPT_DEBUG', false !== strpos( $wp_version, '-src' ) );
 
 	if ( ! $guessurl = site_url() )
 		$guessurl = wp_guess_url();
@@ -541,26 +549,28 @@ function wp_default_styles( &$styles ) {
 	$styles->text_direction = function_exists( 'is_rtl' ) && is_rtl() ? 'rtl' : 'ltr';
 	$styles->default_dirs = array('/wp-admin/', '/wp-includes/css/');
 
-	if ( ! defined( 'SCRIPT_DEBUG' ) )
-		define( 'SCRIPT_DEBUG', ! file_exists( ABSPATH . WPINC . '/js/wp-util.min.js' ) );
-
 	$suffix = SCRIPT_DEBUG ? '' : '.min';
 
 	$rtl_styles = array( 'wp-admin', 'ie', 'media', 'admin-bar', 'customize-controls', 'media-views', 'wp-color-picker' );
 	// Any rtl stylesheets that don't have a .min version
 	$no_suffix = array( 'farbtastic' );
 
-	$styles->add( 'wp-admin', "/wp-admin/css/wp-admin$suffix.css" );
+	$styles->add( 'wp-admin', "/wp-admin/css/wp-admin$suffix.css", array( 'open-sans', 'dashicons' ) );
 
 	$styles->add( 'ie', "/wp-admin/css/ie$suffix.css" );
 	$styles->add_data( 'ie', 'conditional', 'lte IE 7' );
 
+	// Hotlink Open Sans, for now
+	$styles->add( 'open-sans', '//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,300,400,600&subset=latin-ext,latin' );
+
+	// Dashicons
+	$styles->add( 'dashicons', '/wp-includes/css/dashicons.css' );
+
 	// Register "meta" stylesheet for admin colors. All colors-* style sheets should have the same version string.
-	$styles->add( 'colors', true, array('wp-admin', 'buttons') );
+	$styles->add( 'colors', true, array( 'wp-admin', 'buttons', 'open-sans', 'dashicons' ) );
 
 	// do not refer to these directly, the right one is queued by the above "meta" colors handle
-	$styles->add( 'colors-fresh', "/wp-admin/css/colors-fresh$suffix.css", array('wp-admin', 'buttons') );
-	$styles->add( 'colors-classic', "/wp-admin/css/colors-classic$suffix.css", array('wp-admin', 'buttons') );
+	$styles->add( 'colors-fresh', "/wp-admin/css/colors-fresh$suffix.css", array( 'wp-admin', 'buttons' ) );
 
 	$styles->add( 'media', "/wp-admin/css/media$suffix.css" );
 	$styles->add( 'install', "/wp-admin/css/install$suffix.css", array('buttons') );
@@ -569,7 +579,7 @@ function wp_default_styles( &$styles ) {
 	$styles->add( 'wp-color-picker', "/wp-admin/css/color-picker$suffix.css" );
 	$styles->add( 'jcrop', "/wp-includes/js/jcrop/jquery.Jcrop.min.css", array(), '0.9.12' );
 	$styles->add( 'imgareaselect', '/wp-includes/js/imgareaselect/imgareaselect.css', array(), '0.9.8' );
-	$styles->add( 'admin-bar', "/wp-includes/css/admin-bar$suffix.css" );
+	$styles->add( 'admin-bar', "/wp-includes/css/admin-bar$suffix.css", array( 'open-sans', 'dashicons' ) );
 	$styles->add( 'wp-jquery-ui-dialog', "/wp-includes/css/jquery-ui-dialog$suffix.css" );
 	$styles->add( 'editor-buttons', "/wp-includes/css/editor$suffix.css" );
 	$styles->add( 'wp-pointer', "/wp-includes/css/wp-pointer$suffix.css" );
@@ -687,13 +697,16 @@ function wp_style_loader_src( $src, $handle ) {
  * print_footer_scripts() is called in the footer to print these scripts.
  *
  * @since 2.8
+ *
  * @see wp_print_scripts()
  */
 function print_head_scripts() {
 	global $wp_scripts, $concatenate_scripts;
 
-	if ( ! did_action('wp_print_scripts') )
-		do_action('wp_print_scripts');
+	if ( ! did_action('wp_print_scripts') ) {
+		/** This action is documented in wp-includes/functions.wp-scripts.php */
+		do_action( 'wp_print_scripts' );
+	}
 
 	if ( !is_a($wp_scripts, 'WP_Scripts') )
 		$wp_scripts = new WP_Scripts();
@@ -771,8 +784,10 @@ function _print_scripts() {
  * @since 2.8
  */
 function wp_print_head_scripts() {
-	if ( ! did_action('wp_print_scripts') )
-		do_action('wp_print_scripts');
+	if ( ! did_action('wp_print_scripts') ) {
+		/** This action is documented in wp-includes/functions.wp-scripts.php */
+		do_action( 'wp_print_scripts' );
+	}
 
 	global $wp_scripts;
 

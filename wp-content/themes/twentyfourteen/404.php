@@ -1,13 +1,15 @@
 <?php
 /**
- * The template for displaying 404 pages (Not Found).
+ * The template for displaying 404 pages (Not Found)
  *
  * @package WordPress
  * @subpackage Twenty_Fourteen
+ * @since Twenty Fourteen 1.0
  */
 
 get_header(); ?>
 
+<div id="main-content" class="main-content">
 	<div id="primary" class="content-area">
 		<div id="content" class="site-content" role="main">
 
@@ -23,8 +25,9 @@ get_header(); ?>
 
 		</div><!-- #content -->
 	</div><!-- #primary -->
+	<?php get_sidebar( 'content' ); ?>
+</div><!-- #main-content -->
 
 <?php
-get_sidebar( 'content' );
 get_sidebar();
 get_footer();

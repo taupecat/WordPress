@@ -34,6 +34,11 @@ if ( 'on' == $widgets_access ) {
 		wp_enqueue_script( 'jquery-touch-punch' );
 }
 
+/**
+ * Fires early before the Widgets administration screen loads, after scripts are enqueued.
+ *
+ * @since 2.2.0
+ */
 do_action( 'sidebar_admin_setup' );
 
 $title = __( 'Widgets' );
@@ -315,7 +320,13 @@ require_once( ABSPATH . 'wp-admin/admin-header.php' ); ?>
 <div id="message" class="error"><p><?php echo $errors[$_GET['error']]; ?></p></div>
 <?php } ?>
 
-<?php do_action( 'widgets_admin_page' ); ?>
+<?php
+/**
+ * Fires before the Widgets administration page content loads.
+ *
+ * @since 3.0.0
+ */
+do_action( 'widgets_admin_page' ); ?>
 
 <div class="widget-liquid-left">
 <div id="widgets-left">
@@ -395,6 +406,21 @@ foreach ( $wp_registered_sidebars as $sidebar => $registered_sidebar ) {
 <br class="clear" />
 </div>
 
+<div id="widgets-chooser">
+	<h3><?php _e( 'Choose an area to place this widget&hellip;' ); ?></h3>
+	<ul class="widgets-chooser-sidebars"></ul>
+	<div class="widgets-chooser-actions">
+		<button class="button-primary"><?php _e( 'Add Widget' ); ?></button>
+		<button class="button-secondary"><?php _e( 'Cancel' ); ?></button>
+	</div>
+</div>
+
 <?php
+
+/**
+ * Fires after the available widgets and sidebars have loaded, before the admin footer.
+ *
+ * @since 2.2.0
+ */
 do_action( 'sidebar_admin_page' );
 require_once( ABSPATH . 'wp-admin/admin-footer.php' );

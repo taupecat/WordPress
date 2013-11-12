@@ -1,12 +1,14 @@
 <?php
 /**
- * Makes a custom Widget for displaying Aside, Quote, Video, Image, Gallery,
- * and Link posts, available with Twenty Fourteen.
+ * Custom Widget for displaying specific post formats
  *
- * Learn more: http://codex.wordpress.org/Widgets_API#Developing_Widgets
+ * Displays posts from Aside, Quote, Video, Audio, Image, Gallery, and Link formats.
+ *
+ * @link http://codex.wordpress.org/Widgets_API#Developing_Widgets
  *
  * @package WordPress
  * @subpackage Twenty_Fourteen
+ * @since Twenty Fourteen 1.0
  */
 
 class Twenty_Fourteen_Ephemera_Widget extends WP_Widget {
@@ -14,12 +16,16 @@ class Twenty_Fourteen_Ephemera_Widget extends WP_Widget {
 	/**
 	 * The supported post formats.
 	 *
+	 * @since Twenty Fourteen 1.0
+	 *
 	 * @var array
 	 */
-	private $formats = array( 'aside', 'image', 'video', 'quote', 'link', 'gallery' );
+	private $formats = array( 'aside', 'image', 'video', 'audio', 'quote', 'link', 'gallery' );
 
 	/**
 	 * Pluralized post format strings.
+	 *
+	 * @since Twenty Fourteen 1.0
 	 *
 	 * @var array
 	 */
@@ -28,21 +34,24 @@ class Twenty_Fourteen_Ephemera_Widget extends WP_Widget {
 	/**
 	 * Constructor.
 	 *
+	 * @since Twenty Fourteen 1.0
+	 *
 	 * @return Twenty_Fourteen_Ephemera_Widget
 	 */
 	public function __construct() {
 		parent::__construct( 'widget_twentyfourteen_ephemera', __( 'Twenty Fourteen Ephemera', 'twentyfourteen' ), array(
 			'classname'   => 'widget_twentyfourteen_ephemera',
-			'description' => __( 'Use this widget to list your recent Aside, Quote, Video, Image, Gallery, and Link posts', 'twentyfourteen' ),
+			'description' => __( 'Use this widget to list your recent Aside, Quote, Video, Audio, Image, Gallery, and Link posts', 'twentyfourteen' ),
 		) );
 
-		/**
-		 * @todo http://core.trac.wordpress.org/ticket/23257
+		/*
+		 * @todo http://core.trac.wordpress.org/ticket/23257: Add plural versions of Post Format strings
 		 */
 		$this->format_strings = array(
 			'aside'   => __( 'Asides',    'twentyfourteen' ),
 			'image'   => __( 'Images',    'twentyfourteen' ),
 			'video'   => __( 'Videos',    'twentyfourteen' ),
+			'audio'   => __( 'Audio',     'twentyfourteen' ),
 			'quote'   => __( 'Quotes',    'twentyfourteen' ),
 			'link'    => __( 'Links',     'twentyfourteen' ),
 			'gallery' => __( 'Galleries', 'twentyfourteen' ),
@@ -54,7 +63,9 @@ class Twenty_Fourteen_Ephemera_Widget extends WP_Widget {
 	}
 
 	/**
-	 * Outputs the HTML for this widget.
+	 * Output the HTML for this widget.
+	 *
+	 * @since Twenty Fourteen 1.0
 	 *
 	 * @param array $args An array of standard parameters for widgets in this theme.
 	 * @param array $instance An array of settings for this widget instance.
@@ -110,39 +121,66 @@ class Twenty_Fourteen_Ephemera_Widget extends WP_Widget {
 
 				<?php while ( $ephemera->have_posts() ) : $ephemera->the_post(); ?>
 				<li>
-				<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+				<article <?php post_class(); ?>>
 					<div class="entry-content">
 						<?php
 							if ( has_post_format( 'gallery' ) ) :
-								$images = get_posts( array(
-									'post_parent'    => get_post()->post_parent,
-									'fields'         => 'ids',
-									'numberposts'    => -1,
-									'post_status'    => 'inherit',
-									'post_type'      => 'attachment',
-									'post_mime_type' => 'image',
-									'order'          => 'ASC',
-									'orderby'        => 'menu_order ID'
-								) );
-								$total_images = count( $images );
 
-								if ( has_post_thumbnail() ) :
-									$featured_image = get_the_post_thumbnail( get_the_ID(), 'featured-thumbnail-formatted' );
-								elseif ( $total_images > 0 ) :
-									$image          = array_shift( $images );
-									$featured_image = wp_get_attachment_image( $image, 'featured-thumbnail-formatted' );
-								endif;
+								if ( post_password_required() ) :
+									the_content( __( 'Continue reading <span class="meta-nav">&rarr;</span>', 'twentyfourteen' ) );
+								else :
+									$images = array();
+
+									if ( function_exists( 'get_post_galleries' ) ) {
+										$galleries = get_post_galleries( get_the_ID(), false );
+										if ( isset( $galleries[0]['ids'] ) )
+										 	$images = explode( ',', $galleries[0]['ids'] );
+									} else {
+										$pattern = get_shortcode_regex();
+										preg_match( "/$pattern/s", get_the_content(), $match );
+										$atts = shortcode_parse_atts( $match[3] );
+										if ( isset( $atts['ids'] ) )
+											$images = explode( ',', $atts['ids'] );
+									}
+
+									if ( ! $images ) :
+										$images = get_posts( array(
+											'fields'         => 'ids',
+											'numberposts'    => 999,
+											'order'          => 'ASC',
+											'orderby'        => 'menu_order',
+											'post_mime_type' => 'image',
+											'post_parent'    => get_the_ID(),
+											'post_type'      => 'attachment',
+										) );
+									endif;
+
+									$total_images = count( $images );
+
+									if ( has_post_thumbnail() ) :
+										$post_thumbnail = get_the_post_thumbnail( get_the_ID(), 'post-thumbnail' );
+									elseif ( $total_images > 0 ) :
+										$image          = array_shift( $images );
+										$post_thumbnail = wp_get_attachment_image( $image, 'post-thumbnail' );
+									endif;
+
+									if ( ! empty ( $post_thumbnail ) ) :
 						?>
-						<a href="<?php the_permalink(); ?>"><?php echo $featured_image; ?></a>
-						<p class="wp-caption-text">
+									<a href="<?php the_permalink(); ?>"><?php echo $post_thumbnail; ?></a>
+								<?php
+									endif;
+								?>
+									<p class="wp-caption-text">
+									<?php
+										printf( _n( 'This gallery contains <a href="%1$s" rel="bookmark">%2$s photo</a>.', 'This gallery contains <a href="%1$s" rel="bookmark">%2$s photos</a>.', $total_images, 'twentyfourteen' ),
+											esc_url( get_permalink() ),
+											number_format_i18n( $total_images )
+										);
+									?>
+									</p>
 							<?php
-								printf( _n( 'This gallery contains <a href="%1$s" rel="bookmark">%2$s photo</a>.', 'This gallery contains <a href="%1$s" rel="bookmark">%2$s photos</a>.', $total_images, 'twentyfourteen' ),
-									esc_url( get_permalink() ),
-									number_format_i18n( $total_images )
-								);
-							?>
-						</p>
-						<?php
+								endif;
+
 							else :
 								the_content( __( 'Continue reading <span class="meta-nav">&rarr;</span>', 'twentyfourteen' ) );
 							endif;
@@ -156,13 +194,11 @@ class Twenty_Fourteen_Ephemera_Widget extends WP_Widget {
 									the_title( '<h1 class="entry-title"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h1>' );
 								endif;
 
-								printf( __( '<span class="entry-date"><a href="%1$s" title="%2$s" rel="bookmark"><time class="entry-date" datetime="%3$s">%4$s</time></a></span> <span class="byline"><span class="author vcard"><a class="url fn n" href="%5$s" title="%6$s" rel="author">%7$s</a></span></span>', 'twentyfourteen' ),
+								printf( __( '<span class="entry-date"><a href="%1$s" rel="bookmark"><time class="entry-date" datetime="%2$s">%3$s</time></a></span> <span class="byline"><span class="author vcard"><a class="url fn n" href="%4$s" rel="author">%5$s</a></span></span>', 'twentyfourteen' ),
 									esc_url( get_permalink() ),
-									esc_attr( get_the_time() ),
 									esc_attr( get_the_date( 'c' ) ),
 									esc_html( get_the_date() ),
 									esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ),
-									esc_attr( sprintf( __( 'View all posts by %s', 'twentyfourteen' ), get_the_author() ) ),
 									get_the_author()
 								);
 
@@ -193,8 +229,10 @@ class Twenty_Fourteen_Ephemera_Widget extends WP_Widget {
 	}
 
 	/**
-	 * Deals with the settings when they are saved by the admin. Here is where
-	 * any validation should be dealt with.
+	 * Deal with the settings when they are saved by the admin. Here is where
+	 * any validation should happen.
+	 *
+	 * @since Twenty Fourteen 1.0
 	 *
 	 * @param array $new_instance
 	 * @param array $instance
@@ -212,7 +250,9 @@ class Twenty_Fourteen_Ephemera_Widget extends WP_Widget {
 	}
 
 	/**
-	 * Deletes the transient.
+	 * Delete the transient.
+	 *
+	 * @since Twenty Fourteen 1.0
 	 *
 	 * @return void
 	 */
@@ -221,7 +261,9 @@ class Twenty_Fourteen_Ephemera_Widget extends WP_Widget {
 	}
 
 	/**
-	 * Displays the form for this widget on the Widgets page of the Admin area.
+	 * Display the form for this widget on the Widgets page of the Admin area.
+	 *
+	 * @since Twenty Fourteen 1.0
 	 *
 	 * @param array $instance
 	 * @return void

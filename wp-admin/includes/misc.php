@@ -247,7 +247,7 @@ add_action( 'update_option_page_on_front', 'update_home_siteurl', 10, 2 );
 /**
  * Shorten an URL, to be used as link text
  *
- * @since 1.2.1
+ * @since 1.2.0
  *
  * @param string $url
  * @return string
@@ -296,7 +296,7 @@ function wp_reset_vars( $vars ) {
  */
 function show_message($message) {
 	if ( is_wp_error($message) ){
-		if ( $message->get_error_data() )
+		if ( $message->get_error_data() && is_string( $message->get_error_data() ) )
 			$message = $message->get_error_message() . ': ' . $message->get_error_data();
 		else
 			$message = $message->get_error_message();

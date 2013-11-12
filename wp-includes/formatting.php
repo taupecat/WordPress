@@ -1169,10 +1169,15 @@ function convert_chars($content, $deprecated = '') {
  * @return string Balanced text
  */
 function balanceTags( $text, $force = false ) {
-	if ( $force || get_option('use_balanceTags') == 1 )
-		return force_balance_tags( $text );
-	else
-		return $text;
+	if ( $force || get_option('use_balanceTags') == 1 ) {
+		$balance_tags_delimiters = apply_filters( 'balance_tags_delimiters', array( '<!--more.*?-->', '<!--nextpage-->' ) );
+		// Capture lets PREG_SPLIT_DELIM_CAPTURE return the delimiters
+		$delimiters_regex = '/(' . implode( '|', $balance_tags_delimiters ) . ')/';
+		$parts = preg_split( $delimiters_regex, $text, -1, PREG_SPLIT_DELIM_CAPTURE );
+		return implode( '', array_map( 'force_balance_tags', $parts ) );
+	}
+
+	return $text;
 }
 
 /**
@@ -1601,8 +1606,15 @@ function _make_email_clickable_cb($matches) {
 function make_clickable( $text ) {
 	$r = '';
 	$textarr = preg_split( '/(<[^<>]+>)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE ); // split out HTML tags
+	$nested_code_pre = 0; // Keep track of how many levels link is nested inside <pre> or <code>
 	foreach ( $textarr as $piece ) {
-		if ( empty( $piece ) || ( $piece[0] == '<' && ! preg_match('|^<\s*[\w]{1,20}+://|', $piece) ) ) {
+
+		if ( preg_match( '|^<code[\s>]|i', $piece ) || preg_match( '|^<pre[\s>]|i', $piece ) )
+			$nested_code_pre++;
+		elseif ( ( '</code>' === strtolower( $piece ) || '</pre>' === strtolower( $piece ) ) && $nested_code_pre )
+			$nested_code_pre--;
+
+		if ( $nested_code_pre || empty( $piece ) || ( $piece[0] === '<' && ! preg_match( '|^<\s*[\w]{1,20}+://|', $piece ) ) ) {
 			$r .= $piece;
 			continue;
 		}
@@ -2956,6 +2968,11 @@ function sanitize_option($option, $value) {
 		case 'tag_base':
 			$value = esc_url_raw( $value );
 			$value = str_replace( 'http://', '', $value );
+			break;
+
+		case 'default_role' :
+			if ( ! get_role( $value ) && get_role( 'subscriber' ) )
+				$value = 'subscriber';
 			break;
 	}
 

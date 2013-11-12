@@ -151,9 +151,9 @@ pre {
 	font-size: 15px;
 	line-height: 1.6;
 	margin-bottom: 24px;
-	padding: 12px;
-	overflow: auto;
 	max-width: 100%;
+	overflow: auto;
+	padding: 12px;
 }
 
 blockquote,
@@ -278,7 +278,7 @@ a:focus {
 
 a:active,
 a:hover {
-	color: #5ff23d;
+	color: #55d737;
 	outline: 0;
 }
 
@@ -385,7 +385,7 @@ img {
 }
 
 .mceTemp + ul,
-.mceTemp + ol  {
+.mceTemp + ol {
 	list-style-position: inside;
 }
 

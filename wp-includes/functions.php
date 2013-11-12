@@ -894,27 +894,24 @@ function get_status_header_desc( $code ) {
  * Set HTTP status header.
  *
  * @since 2.0.0
- * @uses apply_filters() Calls 'status_header' on status header string, HTTP
- *		HTTP code, HTTP code description, and protocol string as separate
- *		parameters.
+ * @see get_status_header_desc()
  *
- * @param int $header HTTP status code
- * @return unknown
+ * @param int $code HTTP status code.
  */
-function status_header( $header ) {
-	$text = get_status_header_desc( $header );
+function status_header( $code ) {
+	$description = get_status_header_desc( $code );
 
-	if ( empty( $text ) )
-		return false;
+	if ( empty( $description ) )
+		return;
 
-	$protocol = $_SERVER["SERVER_PROTOCOL"];
+	$protocol = $_SERVER['SERVER_PROTOCOL'];
 	if ( 'HTTP/1.1' != $protocol && 'HTTP/1.0' != $protocol )
 		$protocol = 'HTTP/1.0';
-	$status_header = "$protocol $header $text";
+	$status_header = "$protocol $code $description";
 	if ( function_exists( 'apply_filters' ) )
-		$status_header = apply_filters( 'status_header', $status_header, $header, $text, $protocol );
+		$status_header = apply_filters( 'status_header', $status_header, $code, $description, $protocol );
 
-	return @header( $status_header, true, $header );
+	@header( $status_header, true, $code );
 }
 
 /**
@@ -925,7 +922,6 @@ function status_header( $header ) {
  *
  * @since 2.8.0
  *
- * @uses apply_filters()
  * @return array The associative array of header names and field values.
  */
 function wp_get_nocache_headers() {
@@ -949,7 +945,7 @@ function wp_get_nocache_headers() {
  * be sent so that all of them get the point that no caching should occur.
  *
  * @since 2.0.0
- * @uses wp_get_nocache_headers()
+ * @see wp_get_nocache_headers()
  */
 function nocache_headers() {
 	$headers = wp_get_nocache_headers();
@@ -1873,8 +1869,8 @@ function wp_check_filetype( $filename, $mimes = null ) {
  *
  * @since 3.0.0
  *
- * @param string $file Full path to the image.
- * @param string $filename The filename of the image (may differ from $file due to $file being in a tmp directory)
+ * @param string $file Full path to the file.
+ * @param string $filename The name of the file (may differ from $file due to $file being in a tmp directory)
  * @param array $mimes Optional. Key is the file extension with value as the mime type.
  * @return array Values for the extension, MIME, and either a corrected filename or false if original $filename is valid
  */
@@ -3258,7 +3254,7 @@ function wp_guess_url() {
 				$path = preg_replace( '#/' . preg_quote( $directory, '#' ) . '/[^/]*$#i', '' , $_SERVER['REQUEST_URI'] );
 			} elseif ( false !== strpos( $abspath_fix, $script_filename_dir ) ) {
 				// Request is hitting a file above ABSPATH
-				$subdirectory = str_replace( $script_filename_dir, '', $abspath_fix );
+				$subdirectory = substr( $abspath_fix, strpos( $abspath_fix, $script_filename_dir ) + strlen( $script_filename_dir ) );
 				// Strip off any file/query params from the path, appending the sub directory to the install
 				$path = preg_replace( '#/[^/]*$#i', '' , $_SERVER['REQUEST_URI'] ) . $subdirectory;
 			} else {
@@ -3349,10 +3345,10 @@ function is_main_site( $site_id = null ) {
 function is_main_network( $network_id = null ) {
 	global $current_site, $wpdb;
 
-	$current_network_id = (int) $current_site->id;
-
 	if ( ! is_multisite() )
 		return true;
+
+	$current_network_id = (int) $current_site->id;
 
 	if ( ! $network_id )
 		$network_id = $current_network_id;
@@ -3734,7 +3730,6 @@ function __return_false() {
  * Useful for returning 0 to filters easily.
  *
  * @since 3.0.0
- * @see __return_zero()
  * @return int 0
  */
 function __return_zero() {
@@ -3747,7 +3742,6 @@ function __return_zero() {
  * Useful for returning an empty array to filters easily.
  *
  * @since 3.0.0
- * @see __return_zero()
  * @return array Empty array
  */
 function __return_empty_array() {
@@ -3918,7 +3912,7 @@ function wp_allowed_protocols() {
  * Return a comma separated string of functions that have been called to get to the current point in code.
  *
  * @link http://core.trac.wordpress.org/ticket/19589
- * @since 3.4
+ * @since 3.4.0
  *
  * @param string $ignore_class A class to ignore all function calls within - useful when you want to just give info about the callee
  * @param int $skip_frames A number of stack frames to skip - useful for unwinding back to the source of the issue

@@ -1,6 +1,6 @@
 <?php
 /**
- * The template for displaying Archive pages.
+ * The template for displaying Archive pages
  *
  * Used to display archive-type pages if nothing more specific matches a query.
  * For example, puts together date-based pages if no date.php file exists.
@@ -10,14 +10,16 @@
  * already has tag.php for Tag archives, category.php for Category archives,
  * and author.php for Author archives.
  *
- * Learn more: http://codex.wordpress.org/Template_Hierarchy
+ * @link http://codex.wordpress.org/Template_Hierarchy
  *
  * @package WordPress
  * @subpackage Twenty_Fourteen
+ * @since Twenty Fourteen 1.0
  */
 
 get_header(); ?>
 
+<div id="main-content" class="main-content">
 	<section id="primary" class="content-area">
 		<div id="content" class="site-content" role="main">
 
@@ -58,8 +60,9 @@ get_header(); ?>
 			?>
 		</div><!-- #content -->
 	</section><!-- #primary -->
+	<?php get_sidebar( 'content' ); ?>
+</div><!-- #main-content -->
 
 <?php
-get_sidebar( 'content' );
 get_sidebar();
 get_footer();

@@ -1,8 +1,8 @@
 <?php
 /**
- * Twenty Fourteen functions and definitions.
+ * Twenty Fourteen functions and definitions
  *
- * Sets up the theme and provides some helper functions, which are used in the
+ * Set up the theme and provides some helper functions, which are used in the
  * theme as custom template tags. Others are attached to action and filter
  * hooks in WordPress to change core functionality.
  *
@@ -17,31 +17,39 @@
  * instead attached to a filter or action hook.
  *
  * For more information on hooks, actions, and filters,
- * see http://codex.wordpress.org/Plugin_API
+ * @link http://codex.wordpress.org/Plugin_API
  *
  * @package WordPress
  * @subpackage Twenty_Fourteen
+ * @since Twenty Fourteen 1.0
  */
 
 /**
- * Sets up the content width value based on the theme's design.
- * @see twentyfourteen_content_width() for template-specific adjustments.
+ * Set up the content width value based on the theme's design.
+ *
+ * @link twentyfourteen_content_width()
+ *
+ * @since Twenty Fourteen 1.0
  */
 if ( ! isset( $content_width ) )
 	$content_width = 474;
 
 if ( ! function_exists( 'twentyfourteen_setup' ) ) :
 /**
- * Sets up theme defaults and registers support for various WordPress features.
+ * Twenty Fourteen setup.
+ *
+ * Set up theme defaults and registers support for various WordPress features.
  *
  * Note that this function is hooked into the after_setup_theme hook, which
  * runs before the init hook. The init hook is too late for some features, such
  * as indicating support post thumbnails.
+ *
+ * @since Twenty Fourteen 1.0
  */
 function twentyfourteen_setup() {
 
 	/*
-	 * Makes Twenty Fourteen available for translation.
+	 * Make Twenty Fourteen available for translation.
 	 *
 	 * Translations can be added to the /languages/ directory.
 	 * If you're building a theme based on Twenty Fourteen, use a find and
@@ -50,21 +58,16 @@ function twentyfourteen_setup() {
 	 */
 	load_theme_textdomain( 'twentyfourteen', get_template_directory() . '/languages' );
 
-	/*
-	* This theme styles the visual editor to resemble the theme style.
-	*/
+	// This theme styles the visual editor to resemble the theme style.
 	add_editor_style( array( 'editor-style.css', twentyfourteen_font_url() ) );
 
-	// Adds RSS feed links to <head> for posts and comments.
+	// Add RSS feed links to <head> for posts and comments.
 	add_theme_support( 'automatic-feed-links' );
 
-	// Enable support for Post Thumbnails.
-	add_theme_support( 'post-thumbnails', array( 'post' ) );
-
-	// Adding several sizes for Post Thumbnails.
-	add_image_size( 'featured-thumbnail-large', 672, 0 );
-	add_image_size( 'featured-thumbnail-featured', 672, 336, true );
-	add_image_size( 'featured-thumbnail-formatted', 306, 0 );
+	// Enable support for Post Thumbnails, and declare two sizes.
+	add_theme_support( 'post-thumbnails' );
+	add_image_size( 'post-thumbnail-full-width', 1038, 576, true );
+	add_image_size( 'post-thumbnail', 672, 372, true );
 
 	// This theme uses wp_nav_menu() in two locations.
 	register_nav_menus( array(
@@ -73,7 +76,7 @@ function twentyfourteen_setup() {
 	) );
 
 	/*
-	 * Switches default core markup for search form, comment form, and comments
+	 * Switch default core markup for search form, comment form, and comments
 	 * to output valid HTML5.
 	 */
 	add_theme_support( 'html5', array(
@@ -85,7 +88,7 @@ function twentyfourteen_setup() {
 	 * See http://codex.wordpress.org/Post_Formats
 	 */
 	add_theme_support( 'post-formats', array(
-		'aside', 'image', 'video', 'quote', 'link', 'gallery',
+		'aside', 'image', 'video', 'audio', 'quote', 'link', 'gallery',
 	) );
 
 	/*
@@ -94,44 +97,62 @@ function twentyfourteen_setup() {
 	add_theme_support( 'custom-background', apply_filters( 'twentyfourteen_custom_background_args', array(
 		'default-color' => 'f5f5f5',
 	) ) );
+
+	/*
+	 * Add support for featured content.
+	 */
+	add_theme_support( 'featured-content', array(
+		'featured_content_filter' => 'twentyfourteen_get_featured_posts',
+		'max_posts' => 6,
+	) );
+
+	/*
+	 * This theme uses its own gallery styles.
+	 */
+	add_filter( 'use_default_gallery_style', '__return_false' );
 }
 endif; // twentyfourteen_setup
 add_action( 'after_setup_theme', 'twentyfourteen_setup' );
 
 /**
- * Adjusts content_width value for full-width and attachment templates.
+ * Adjust content_width value for image attachment template.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @return void
  */
 function twentyfourteen_content_width() {
-	if ( is_page_template( 'full-width-page.php' ) || is_attachment() )
+	if ( is_attachment() && wp_attachment_is_image() )
 		$GLOBALS['content_width'] = 810;
 }
 add_action( 'template_redirect', 'twentyfourteen_content_width' );
 
 /**
  * Getter function for Featured Content Plugin.
+ *
+ * @since Twenty Fourteen 1.0
+ *
+ * @return array An array of WP_Post objects.
  */
 function twentyfourteen_get_featured_posts() {
-	return apply_filters( 'twentyfourteen_get_featured_posts', false );
+	return apply_filters( 'twentyfourteen_get_featured_posts', array() );
 }
 
 /**
- * A helper conditional function that returns a boolean value
- * So that we can use a condition like
- * if ( twentyfourteen_has_featured_posts( 1 ) )
+ * A helper conditional function that returns a boolean value.
+ *
+ * @since Twenty Fourteen 1.0
+ *
+ * @return bool Whether there are featured posts.
  */
-function twentyfourteen_has_featured_posts( $minimum = 1 ) {
-	if ( is_paged() )
-		return false;
-
-		$featured_posts = apply_filters( 'twentyfourteen_get_featured_posts', array() );
-
-	return is_array( $featured_posts ) && count( $featured_posts ) > absint( $minimum );
+function twentyfourteen_has_featured_posts() {
+	return ! is_paged() && (bool) apply_filters( 'twentyfourteen_get_featured_posts', false );
 }
 
 /**
- * Registers two widget areas.
+ * Register two widget areas.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @return void
  */
@@ -149,18 +170,9 @@ function twentyfourteen_widgets_init() {
 		'after_title'   => '</h1>',
 	) );
 	register_sidebar( array(
-		'name'          => __( 'Front Page Sidebar', 'twentyfourteen' ),
-		'id'            => 'sidebar-2',
-		'description'   => __( 'Additional sidebar that appears on the right, on the home page.', 'twentyfourteen' ),
-		'before_widget' => '<aside id="%1$s" class="widget %2$s">',
-		'after_widget'  => '</aside>',
-		'before_title'  => '<h1 class="widget-title">',
-		'after_title'   => '</h1>',
-	) );
-	register_sidebar( array(
 		'name'          => __( 'Content Sidebar', 'twentyfourteen' ),
-		'id'            => 'sidebar-3',
-		'description'   => __( 'Additional sidebar that appears on the right, on single posts and pages.', 'twentyfourteen' ),
+		'id'            => 'sidebar-2',
+		'description'   => __( 'Additional sidebar that appears on the right.', 'twentyfourteen' ),
 		'before_widget' => '<aside id="%1$s" class="widget %2$s">',
 		'after_widget'  => '</aside>',
 		'before_title'  => '<h1 class="widget-title">',
@@ -168,7 +180,7 @@ function twentyfourteen_widgets_init() {
 	) );
 	register_sidebar( array(
 		'name'          => __( 'Footer Widget Area', 'twentyfourteen' ),
-		'id'            => 'sidebar-4',
+		'id'            => 'sidebar-3',
 		'description'   => __( 'Appears in the footer section of the site.', 'twentyfourteen' ),
 		'before_widget' => '<aside id="%1$s" class="widget %2$s">',
 		'after_widget'  => '</aside>',
@@ -180,6 +192,8 @@ add_action( 'widgets_init', 'twentyfourteen_widgets_init' );
 
 /**
  * Register Lato Google font for Twenty Fourteen.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @return void
  */
@@ -196,17 +210,18 @@ function twentyfourteen_font_url() {
 }
 
 /**
- * Enqueues scripts and styles for front end.
+ * Enqueue scripts and styles for front end.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @return void
  */
 function twentyfourteen_scripts() {
-
 	// Add Lato font, used in the main stylesheet.
-	wp_enqueue_style( 'twentyfourteen-lato' );
+	wp_enqueue_style( 'twentyfourteen-lato', twentyfourteen_font_url(), array(), null );
 
 	// Add Genericons font, used in the main stylesheet.
-	wp_enqueue_style( 'genericons', get_template_directory_uri() . '/fonts/genericons.css', array(), '3.0' );
+	wp_enqueue_style( 'genericons', get_template_directory_uri() . '/fonts/genericons.css', array(), '3.0.2' );
 
 	// Loads our main stylesheet.
 	wp_enqueue_style( 'twentyfourteen-style', get_stylesheet_uri() );
@@ -220,15 +235,22 @@ function twentyfourteen_scripts() {
 	if ( is_active_sidebar( 'sidebar-3' ) )
 		wp_enqueue_script( 'jquery-masonry' );
 
-	wp_enqueue_script( 'twentyfourteen-theme', get_template_directory_uri() . '/js/theme.js', array( 'jquery' ), '20130820', true );
+	if ( is_front_page() && 'slider' == get_theme_mod( 'featured_content_layout' ) ) {
+		wp_enqueue_script( 'twentyfourteen-slider', get_template_directory_uri() . '/js/slider.js', array( 'jquery' ), '20131109', true );
+		wp_localize_script( 'twentyfourteen-slider', 'featuredSliderDefaults', array(
+			'prevText' => __( 'Previous', 'twentyfourteen' ),
+			'nextText' => __( 'Next', 'twentyfourteen' )
+		) );
+	}
 
-	// Add Lato font used in the main stylesheet.
-	wp_enqueue_style( 'twentyfourteen-lato', twentyfourteen_font_url(), array(), null );
+	wp_enqueue_script( 'twentyfourteen-script', get_template_directory_uri() . '/js/functions.js', array( 'jquery' ), '20131102', true );
 }
 add_action( 'wp_enqueue_scripts', 'twentyfourteen_scripts' );
 
 /**
  * Enqueue Google fonts style to admin screen for custom header display.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @return void
  */
@@ -237,58 +259,11 @@ function twentyfourteen_admin_fonts() {
 }
 add_action( 'admin_print_scripts-appearance_page_custom-header', 'twentyfourteen_admin_fonts' );
 
-/**
- * Sets the post excerpt length to 20 words.
- *
- * @param int $length
- * @return int
- */
-function twentyfourteen_excerpt_length( $length ) {
-	return 20;
-}
-add_filter( 'excerpt_length', 'twentyfourteen_excerpt_length' );
-
-/**
- * Returns a "Continue Reading" link for excerpts
- *
- * @return string
- */
-function twentyfourteen_continue_reading_link() {
-	return ' <a href="'. esc_url( get_permalink() ) . '" class="more-link">' . __( 'Read More <span class="meta-nav">&rarr;</span>', 'twentyfourteen' ) . '</a>';
-}
-
-/**
- * Replaces "[...]" (appended to automatically generated excerpts) with an
- * ellipsis and twentyeleven_continue_reading_link().
- *
- * @param string $more
- * @return string
- */
-function twentyfourteen_auto_excerpt_more( $more ) {
-	return ' &hellip;' . twentyfourteen_continue_reading_link();
-}
-add_filter( 'excerpt_more', 'twentyfourteen_auto_excerpt_more' );
-
-/**
- * Adds a pretty "Continue Reading" link to custom post excerpts.
- *
- * To override this link in a child theme, remove the filter and add your own
- * function tied to the get_the_excerpt filter hook.
- *
- * @param string $output
- * @return string
- */
-function twentyfourteen_custom_excerpt_more( $output ) {
-	if ( has_excerpt() && ! is_attachment() ) {
-		$output .= twentyfourteen_continue_reading_link();
-	}
-	return $output;
-}
-add_filter( 'get_the_excerpt', 'twentyfourteen_custom_excerpt_more' );
-
 if ( ! function_exists( 'twentyfourteen_the_attached_image' ) ) :
 /**
- * Prints the attached image with a link to the next attached image.
+ * Print the attached image with a link to the next attached image.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @return void
  */
@@ -297,7 +272,7 @@ function twentyfourteen_the_attached_image() {
 	$attachment_size     = apply_filters( 'twentyfourteen_attachment_size', array( 1200, 1200 ) );
 	$next_attachment_url = wp_get_attachment_url();
 
-	/**
+	/*
 	 * Grab the IDs of all the image attachments in a gallery so we can get the URL
 	 * of the next adjacent image in a gallery, or the first image (if we're
 	 * looking at the last image in a gallery), or, in a gallery of one, just the
@@ -332,9 +307,8 @@ function twentyfourteen_the_attached_image() {
 			$next_attachment_url = get_attachment_link( array_shift( $attachment_ids ) );
 	}
 
-	printf( '<a href="%1$s" title="%2$s" rel="attachment">%3$s</a>',
+	printf( '<a href="%1$s" rel="attachment">%2$s</a>',
 		esc_url( $next_attachment_url ),
-		the_title_attribute( array( 'echo' => false ) ),
 		wp_get_attachment_image( $post->ID, $attachment_size )
 	);
 }
@@ -342,7 +316,9 @@ endif;
 
 if ( ! function_exists( 'twentyfourteen_list_authors' ) ) :
 /**
- * Prints a list of all site contributors who published at least one post.
+ * Print a list of all site contributors who published at least one post.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @return void
  */
@@ -362,7 +338,7 @@ function twentyfourteen_list_authors() {
 	?>
 
 	<div class="contributor">
-		<div class="contributor-info clear">
+		<div class="contributor-info">
 			<div class="contributor-avatar"><?php echo get_avatar( $contributor_id, 132 ); ?></div>
 			<div class="contributor-summary">
 				<h2 class="contributor-name"><?php echo get_the_author_meta( 'display_name', $contributor_id ); ?></h2>
@@ -382,83 +358,18 @@ function twentyfourteen_list_authors() {
 endif;
 
 /**
- * Gets recent formatted posts that are not featured in FC plugin.
- *
- */
-function twentyfourteen_get_recent( $post_format ) {
-	$args = array(
-		'order' => 'DESC',
-		'ignore_sticky_posts' => 1,
-		'posts_per_page' => 2,
-		'tax_query' => array(
-			array(
-				'taxonomy' => 'post_format',
-				'terms' => array( $post_format ),
-				'field' => 'slug',
-				'operator' => 'IN',
-			),
-		),
-		'no_found_rows' => true,
-	);
-
-	$featured_posts = twentyfourteen_get_featured_posts();
-
-	if ( is_array( $featured_posts ) && ! empty( $featured_posts ) )
-		$args['post__not_in'] = wp_list_pluck( $featured_posts, 'ID' );
-
-	return new WP_Query( $args );
-}
-
-/**
- * Filter the home page posts, and remove formatted posts visible in the sidebar from it
- *
- */
-function twentyfourteen_pre_get_posts( $query ) {
-	// Bail if not home, not a query, not main query.
-	if ( ! $query->is_main_query() || is_admin() )
-		return;
-
-	// Only on the home page
-	if ( $query->is_home() ) {
-		$exclude_ids = array();
-
-		$videos = twentyfourteen_get_recent( 'post-format-video' );
-		$images = twentyfourteen_get_recent( 'post-format-image' );
-		$galleries = twentyfourteen_get_recent( 'post-format-gallery' );
-		$asides = twentyfourteen_get_recent( 'post-format-aside' );
-		$links = twentyfourteen_get_recent( 'post-format-link' );
-		$quotes = twentyfourteen_get_recent( 'post-format-quote' );
-
-		foreach ( $videos->posts as $post )
-			$exclude_ids[] = $post->ID;
-
-		foreach ( $images->posts as $post )
-			$exclude_ids[] = $post->ID;
-
-		foreach ( $galleries->posts as $post )
-			$exclude_ids[] = $post->ID;
-
-		foreach ( $asides->posts as $post )
-			$exclude_ids[] = $post->ID;
-
-		foreach ( $links->posts as $post )
-			$exclude_ids[] = $post->ID;
-
-		foreach ( $quotes->posts as $post )
-			$exclude_ids[] = $post->ID;
-
-		$query->set( 'post__not_in', $exclude_ids );
-	}
-}
-add_action( 'pre_get_posts', 'twentyfourteen_pre_get_posts' );
-
-/**
- *  Extends the default WordPress body classes.
+ * Extend the default WordPress body classes.
  *
  * Adds body classes to denote:
  * 1. Single or multiple authors.
- * 2. Index views.
- * 3. Full-width content layout.
+ * 2. Presense of header image.
+ * 3. Index views.
+ * 4. Full-width content layout.
+ * 5. Presence of footer widgets.
+ * 6. Single views.
+ * 7. Featured content layout.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @param array $classes A list of existing body class values.
  * @return array The filtered body class list.
@@ -467,22 +378,61 @@ function twentyfourteen_body_classes( $classes ) {
 	if ( is_multi_author() )
 		$classes[] = 'group-blog';
 
+	if ( get_header_image() )
+		$classes[] = 'header-image';
+	else
+		$classes[] = 'masthead-fixed';
+
 	if ( is_archive() || is_search() || is_home() )
 		$classes[] = 'list-view';
 
-	if ( ( ! is_front_page() && ! is_active_sidebar( 'sidebar-3' ) )
+	if ( ( ! is_active_sidebar( 'sidebar-2' ) )
 		|| is_page_template( 'full-width-page.php' )
 		|| is_page_template( 'contributor-page.php' )
 		|| is_attachment() )
 		$classes[] = 'full-width';
+
+	if ( is_active_sidebar( 'sidebar-3' ) )
+		$classes[] = 'footer-widgets';
+
+	if ( is_singular() )
+		$classes[] = 'singular';
+
+	if ( is_front_page() && 'slider' == get_theme_mod( 'featured_content_layout' ) )
+		$classes[] = 'slider';
+	elseif ( is_front_page() )
+		$classes[] = 'grid';
 
 	return $classes;
 }
 add_filter( 'body_class', 'twentyfourteen_body_classes' );
 
 /**
- * Creates a nicely formatted and more specific title element text for output
+ * Extend the default WordPress post classes.
+ *
+ * Adds a post class to denote:
+ * Non-password protected page with a post thumbnail.
+ *
+ * @since Twenty Fourteen 1.0
+ *
+ * @param array $classes A list of existing post class values.
+ * @return array The filtered post class list.
+ */
+function twentyfourteen_post_classes( $classes ) {
+	if ( ! post_password_required() && has_post_thumbnail() )
+		$classes[] = 'has-post-thumbnail';
+	else
+		$classes[] = 'no-post-thumbnail';
+
+	return $classes;
+}
+add_filter( 'post_class', 'twentyfourteen_post_classes' );
+
+/**
+ * Create a nicely formatted and more specific title element text for output
  * in head of document, based on current view.
+ *
+ * @since Twenty Fourteen 1.0
  *
  * @param string $title Default title text for current view.
  * @param string $sep Optional separator.
@@ -510,18 +460,20 @@ function twentyfourteen_wp_title( $title, $sep ) {
 }
 add_filter( 'wp_title', 'twentyfourteen_wp_title', 10, 2 );
 
-/**
- * Implement the Custom Header feature
- *
- */
+// Implement Custom Header features.
 require get_template_directory() . '/inc/custom-header.php';
 
-/**
- * Custom template tags for this theme.
- */
+// Custom template tags for this theme.
 require get_template_directory() . '/inc/template-tags.php';
 
-/**
- * Customizer additions
- */
+// Add Theme Customizer functionality.
 require get_template_directory() . '/inc/customizer.php';
+
+/*
+ * Add Featured Content functionality.
+ *
+ * To overwrite in a plugin, define your own Featured_Content class on or
+ * before the 'setup_theme' hook.
+ */
+if ( ! class_exists( 'Featured_Content' ) && 'plugins.php' !== $GLOBALS['pagenow'] )
+	require get_template_directory() . '/inc/featured-content.php';

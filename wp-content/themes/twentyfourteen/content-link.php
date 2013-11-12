@@ -1,23 +1,34 @@
 <?php
 /**
- * The template for displaying posts in the Link post format.
+ * The template for displaying posts in the Link post format
  *
  * @package WordPress
  * @subpackage Twenty_Fourteen
+ * @since Twenty Fourteen 1.0
  */
 ?>
 
 <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+	<?php twentyfourteen_post_thumbnail(); ?>
+
 	<header class="entry-header">
 		<?php if ( in_array( 'category', get_object_taxonomies( get_post_type() ) ) && twentyfourteen_categorized_blog() ) : ?>
 		<div class="entry-meta">
 			<span class="cat-links"><?php echo get_the_category_list( _x( ', ', 'Used between list items, there is a space after the comma.', 'twentyfourteen' ) ); ?></span>
 		</div><!-- .entry-meta -->
-		<?php endif; ?>
+		<?php
+			endif;
+
+			if ( is_single() ) :
+				the_title( '<h1 class="entry-title">', '</h1>' );
+			else :
+				the_title( '<h1 class="entry-title"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h1>' );
+			endif;
+		?>
 
 		<div class="entry-meta">
 			<span class="post-format">
-				<a class="entry-format" href="<?php echo esc_url( get_post_format_link( 'link' ) ); ?>" title="<?php echo esc_attr( sprintf( __( 'All %s posts', 'twentyfourteen' ), get_post_format_string( 'link' ) ) ); ?>"><?php echo get_post_format_string( 'link' ); ?></a>
+				<a class="entry-format" href="<?php echo esc_url( get_post_format_link( 'link' ) ); ?>"><?php echo get_post_format_string( 'link' ); ?></a>
 			</span>
 
 			<?php twentyfourteen_posted_on(); ?>
@@ -32,7 +43,7 @@
 
 	<div class="entry-content">
 		<?php
-			the_content();
+			the_content( __( 'Continue reading <span class="meta-nav">&rarr;</span>', 'twentyfourteen' ) );
 			wp_link_pages( array(
 				'before'      => '<div class="page-links"><span class="page-links-title">' . __( 'Pages:', 'twentyfourteen' ) . '</span>',
 				'after'       => '</div>',
@@ -42,11 +53,8 @@
 		?>
 	</div><!-- .entry-content -->
 
-	<?php if ( has_tag() ) : ?>
-	<footer class="entry-meta">
-		<span class="tag-links">
-			<?php echo get_the_tag_list(); ?>
-		</span>
-	</footer><!-- .entry-meta -->
-	<?php endif; ?>
+	<?php
+		if ( has_tag() )
+			echo get_the_tag_list( '<footer class="entry-meta"><span class="tag-links">', '', '</span></footer>' );
+	?>
 </article><!-- #post-## -->
